@@ -98,7 +98,7 @@ class ImageFieldTokensWigdet extends ImageWidget {
    * @return array
    *   Returns processed element array.
    */
-  public static function process($element, FormStateInterface $form_state, $form) {
+  public static function process(array $element, FormStateInterface $form_state, array $form) {
     $item = $element['#value'];
     $item['fids'] = $element['fids']['#value'];
     $alt_token = '';

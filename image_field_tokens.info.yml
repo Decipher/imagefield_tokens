@@ -4,5 +4,5 @@ description: Provides new widget type for Image field to allow to use tokens for
 core: 8.x
 package: Image
 dependencies:
-  - token
-  - image
+  - drupal:token
+  - drupal:image
