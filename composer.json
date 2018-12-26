@@ -2,13 +2,12 @@
   "name": "drupal/image_field_tokens_d8",
   "description": "Provides new widget type for Image field to allow to use tokens for filling Alt and Title image attributes.",
   "minimum-stability": "dev",
-  "version": "1.1",
   "license": "GPL-2.0+",
   "type": "drupal-module",
   "require": {
-    "drupal/token": "^1.5",
     "composer/installers": "^1.2",
     "oomphinc/composer-installers-extender": "^1.1"
+    "drupal/token": "^1.5",
   },
   "homepage": "https://drupal.org/project/image_field_tokens_d8",
   "authors": [
