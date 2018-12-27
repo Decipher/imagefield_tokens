@@ -20,7 +20,7 @@ REQUIREMENTS
 This module requires the following modules:
 
 - Image (included in Drupal 8 Core)
-- Tockens  (https://www.drupal.org/project/token)
+- Token  (https://www.drupal.org/project/token)
 
 
 CONFIGURATION
