@@ -66,16 +66,18 @@ class ImageFieldTokensWigdet extends ImageWidget {
       $default_image['fid'] = $entity->id();
     }
     $element['#default_image'] = !empty($default_image['fid']) ? $default_image : [];
-    // Add token link to the form.
-    $form['#token'] = TRUE;
-    $moduleHandler = \Drupal::service('module_handler');
-    if ($moduleHandler->moduleExists('token')) {
-      $form['token_tree'] = [
-        '#theme' => 'token_tree_link',
-        '#token_types' => [$entity_type_id],
-        '#show_restricted' => TRUE,
-        '#weight' => 90,
-      ];
+    if (!\Drupal::currentUser()->isAnonymous()) {
+      // Add token link to the form.
+      $form['#token'] = TRUE;
+      $moduleHandler = \Drupal::service('module_handler');
+      if ($moduleHandler->moduleExists('token')) {
+        $form['token_tree'] = [
+          '#theme' => 'token_tree_link',
+          '#token_types' => [$entity_type_id],
+          '#show_restricted' => TRUE,
+          '#weight' => 90,
+        ];
+      }
     }
 
     return $element;
