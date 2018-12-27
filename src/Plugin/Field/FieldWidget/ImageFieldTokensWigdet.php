@@ -84,21 +84,7 @@ class ImageFieldTokensWigdet extends ImageWidget {
   }
 
   /**
-   * Form API callback: Processes a image_image field element.
-   *
-   * Expands the image_image type to include the alt and title fields.
-   *
-   * This method is assigned as a #process callback in formElement() method.
-   *
-   * @param array $element
-   *   Form element array.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   *   Form state object.
-   * @param array $form
-   *   Form elements array.
-   *
-   * @return array
-   *   Returns processed element array.
+   * {@inheritdoc}
    */
   public static function process($element, FormStateInterface $form_state, $form) {
     $item = $element['#value'];
