@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\image_field_tokens\Plugin\Field\FieldFormatter;
+namespace Drupal\imagefield_tokens\Plugin\Field\FieldFormatter;
 
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Entity\EntityStorageInterface;
@@ -17,7 +17,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Plugin implementation of the 'image' formatter.
  *
  * @FieldFormatter(
- *   id = "image_field_tokens",
+ *   id = "imagefield_tokens",
  *   label = @Translation("Image Field Tokens"),
  *   field_types = {
  *     "image"

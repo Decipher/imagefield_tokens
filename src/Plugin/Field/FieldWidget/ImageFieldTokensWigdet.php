@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\image_field_tokens\Plugin\Field\FieldWidget;
+namespace Drupal\imagefield_tokens\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -11,7 +11,7 @@ use Drupal\image\Plugin\Field\FieldWidget\ImageWidget;
  * Plugin implementation of the 'image_image' widget.
  *
  * @FieldWidget(
- *   id = "image_field_tokens",
+ *   id = "imagefield_tokens",
  *   label = @Translation("Image Field Tokens"),
  *   field_types = {
  *     "image"
