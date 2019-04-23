@@ -3,7 +3,6 @@
   "description": "Provides new widget type for Image field to allow to use tokens for filling Alt and Title image attributes.",
   "minimum-stability": "dev",
   "license": "GPL-2.0+",
-  "version": "1.5",
   "type": "drupal-module",
   "require": {
     "drupal/token": "^1.5"

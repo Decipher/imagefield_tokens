@@ -165,7 +165,14 @@ class ImageFieldTokensFormatter extends ImageFormatter {
       $item_values = $item->getValue();
       // Get entity from request.
       $request_params = $this->routeMatch->getParameters()->all();
-      $entity = array_pop($request_params);
+      if (count($request_params) > 0) {
+        foreach ($request_params as $param) {
+          if (is_object($param)) {
+            $entity = $param;
+          }
+        }
+      }
+      /* @var object $entity */
       $entity_type = $entity->getEntityTypeId();
       // Replace entity tokens.
       $alt_token = $this->tokenService->replace($item_values['alt'], [$entity_type => $entity]);
