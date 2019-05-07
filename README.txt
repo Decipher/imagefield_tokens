@@ -37,4 +37,5 @@ ImageField Tokens 5.x & 6.x were written by Stuart Clark (deciphered).
 
 ImageField Tokens 7.x was written by eosrei - http://eosrei.net
 
-ImageField Tokens 8.x was written by ysamoylenko - https://www.drupal.org/u/ysamoylenko
+ImageField Tokens 8.x was written by ysamoylenko:
+https://www.drupal.org/u/ysamoylenko
