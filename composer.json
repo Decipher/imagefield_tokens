@@ -1,5 +1,5 @@
 {
-  "name": "drupal/image_field_tokens_d8",
+  "name": "drupal/imagefield_tokens",
   "description": "Provides new widget type for Image field to allow to use tokens for filling Alt and Title image attributes.",
   "minimum-stability": "dev",
   "license": "GPL-2.0+",
@@ -7,7 +7,7 @@
   "require": {
     "drupal/token": "^1.5"
   },
-  "homepage": "https://drupal.org/project/image_field_tokens_d8",
+  "homepage": "https://drupal.org/project/imagefield_tokens",
   "authors": [
     {
       "name": "Yaroslav Samoilenko (ysamoylenko)",
@@ -16,8 +16,8 @@
     }
   ],
   "support": {
-    "issues": "https://drupal.org/project/issues/image_field_tokens_d8",
+    "issues": "https://drupal.org/project/issues/imagefield_tokens",
     "irc": "irc://irc.freenode.org/drupal-contribute",
-    "source": "https://cgit.drupalcode.org/image_field_tokens_d8"
+    "source": "https://cgit.drupalcode.org/imagefield_tokens"
   }
 }
