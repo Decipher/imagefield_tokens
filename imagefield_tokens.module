@@ -25,3 +25,12 @@ function imagefield_tokens_help($route_name, RouteMatchInterface $route_match) {
     default:
   }
 }
+
+/**
+ * Implements hook_filefield_sources_widgets().
+ *
+ * This returns a list of widgets that are compatible with FileField Sources.
+ */
+function imagefield_tokens_filefield_sources_widgets() {
+  return array('file_generic', 'image_image', 'imagefield_tokens');
+}
