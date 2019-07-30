@@ -4,6 +4,7 @@ namespace Drupal\imagefield_tokens\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\field\Entity\FieldConfig;
 use Drupal\file\Entity\File;
 use Drupal\image\Plugin\Field\FieldWidget\ImageWidget;
 
@@ -87,10 +88,34 @@ class ImageFieldTokensWigdet extends ImageWidget {
    * {@inheritdoc}
    */
   public static function process($element, FormStateInterface $form_state, $form) {
+    $entity_type = '';
+    $current_entity = NULL;
+    // Get form object to retrieve parent entity.
+    $form_object = $form_state->getFormObject();
+    $get_entity = method_exists($form_object, 'getEntity');
+
+    if ($get_entity) {
+      $current_entity = $form_object->getEntity();
+      if (!empty($current_entity)) {
+        // Get entity data.
+        $entity_type = $current_entity->getEntityTypeId();
+        $entity_bundle = $current_entity->bundle();
+        // Get field settings.
+        $field_name = $element['#field_name'];
+        $field_config = FieldConfig::loadByName($entity_type, $entity_bundle, $field_name);
+        $field_settings = $field_config->getSettings();
+      }
+    }
+
     $item = $element['#value'];
     $item['fids'] = $element['fids']['#value'];
     $alt_token = '';
     $title_token = '';
+    // Fill alt & title fields from default image settings if they are empty.
+    if (!empty($field_settings) && !empty($field_settings['default_image']) && (empty($item['alt']) || empty($item['title'])) && empty($element['#default_value']['alt'])) {
+      $item['alt'] = $field_settings['default_image']['alt'];
+      $item['title'] = $field_settings['default_image']['title'];
+    }
 
     $element['#theme'] = 'image_widget';
 
@@ -153,13 +178,17 @@ class ImageFieldTokensWigdet extends ImageWidget {
       }
     }
 
-    $entity = $form_state->getFormObject()->getEntity();
-    $entity_type = $entity->getEntityTypeId();
     if (isset($item['alt'])) {
-      $alt_token = \Drupal::token()->replace($item['alt'], [$entity_type => $entity]);
+      $alt_token = \Drupal::token()->replace($item['alt'], [$entity_type => $current_entity]);
+      if (empty($alt_token)) {
+        $alt_token = $item['alt'];
+      }
     }
     if (isset($item['title'])) {
-      $title_token = \Drupal::token()->replace($item['title'], [$entity_type => $entity]);
+      $title_token = \Drupal::token()->replace($item['title'], [$entity_type => $current_entity]);
+      if (empty($title_token)) {
+        $title_token = $item['title'];
+      }
     }
 
     // Add the additional alt and title fields.
