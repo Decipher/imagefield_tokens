@@ -90,6 +90,7 @@ class ImageFieldTokensWigdet extends ImageWidget {
   public static function process($element, FormStateInterface $form_state, $form) {
     $entity_type = '';
     $current_entity = NULL;
+    $field_settings = [];
     // Get form object to retrieve parent entity.
     $form_object = $form_state->getFormObject();
     $get_entity = method_exists($form_object, 'getEntity');
@@ -112,7 +113,8 @@ class ImageFieldTokensWigdet extends ImageWidget {
     $alt_token = '';
     $title_token = '';
     // Fill alt & title fields from default image settings if they are empty.
-    if (!empty($field_settings) && !empty($field_settings['default_image']) && (empty($item['alt']) || empty($item['title'])) && empty($element['#default_value']['alt'])) {
+    $condition = !empty($field_settings) && !empty($field_settings['default_image']) && (empty($item['alt']) || empty($item['title'])) && (!empty($element['#default_value']['display']) || empty($element['#default_value']['alt']));
+    if ($condition) {
       $item['alt'] = $field_settings['default_image']['alt'];
       $item['title'] = $field_settings['default_image']['title'];
     }

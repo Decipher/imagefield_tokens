@@ -34,3 +34,17 @@ function imagefield_tokens_help($route_name, RouteMatchInterface $route_match) {
 function imagefield_tokens_filefield_sources_widgets() {
   return array('file_generic', 'image_image', 'imagefield_tokens', 'imagefield_tokens_widget_crop');
 }
+
+/**
+ * Implements hook_field_widget_info_alter().
+ *
+ * @param array $info
+ *   Widgets info array.
+ */
+function imagefield_tokens_field_widget_info_alter(array &$info) {
+  // Disable ImageField Tokens crop widget if related module not installed.
+  $moduleHandler = \Drupal::service('module_handler');
+  if (!$moduleHandler->moduleExists('image_widget_crop')) {
+    unset($info['imagefield_tokens_widget_crop']);
+  }
+}
