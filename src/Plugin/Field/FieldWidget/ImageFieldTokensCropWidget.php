@@ -28,7 +28,8 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $element = parent::formElement($items, $delta, $element, $form, $form_state);
-    $entity_type_id = $form_state->getFormObject()->getEntity()->getEntityTypeId();
+    $object = $form_state->getFormObject();
+    $entity_type_id = $object->getEntity() ? $object->getEntity()->getEntityTypeId() : '';
     if (!\Drupal::currentUser()->isAnonymous()) {
       // Add token link to the form.
       $form['#token'] = TRUE;
