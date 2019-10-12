@@ -113,6 +113,7 @@ class ImageFieldTokensFormatter extends ImageFormatter {
    */
   public function viewElements(FieldItemListInterface $items, $langcode) {
     $elements = [];
+    $entity = NULL;
     $files = $this->getEntitiesToView($items, $langcode);
 
     // Early opt-out if the field is empty.
@@ -172,11 +173,13 @@ class ImageFieldTokensFormatter extends ImageFormatter {
           }
         }
       }
-      /* @var object $entity */
-      $entity_type = $entity->getEntityTypeId();
+      $data = [];
+      if ($entity) {
+        $data[$entity->getEntityTypeId()] = $entity;
+      }
       // Replace entity tokens.
-      $alt_token = $this->tokenService->replace($item_values['alt'], [$entity_type => $entity]);
-      $title_token = $this->tokenService->replace($item_values['title'], [$entity_type => $entity]);
+      $alt_token = $this->tokenService->replace($item_values['alt'], $data);
+      $title_token = $this->tokenService->replace($item_values['title'], $data);
       // Set converted values to the item.
       $item_values['alt'] = $alt_token;
       $item_values['title'] = $title_token;
