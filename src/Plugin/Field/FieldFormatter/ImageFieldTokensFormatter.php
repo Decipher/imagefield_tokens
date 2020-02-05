@@ -175,7 +175,8 @@ class ImageFieldTokensFormatter extends ImageFormatter {
       }
       $data = [];
       if ($entity) {
-        $data[$entity->getEntityTypeId()] = $entity;
+        $entity_type = (method_exists($entity, 'getEntityTypeId')) ? $entity->getEntityTypeId(): $entity->getContext('entity')->getContextData()->getValue('entity')->getEntityTypeId();
+        $data[$entity_type] = $entity;
       }
       // Replace entity tokens.
       $alt_token = $this->tokenService->replace($item_values['alt'], $data);
