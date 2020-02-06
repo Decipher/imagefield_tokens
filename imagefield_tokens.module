@@ -50,3 +50,19 @@ function imagefield_tokens_field_widget_info_alter(array &$info) {
     unset($info['imagefield_tokens_widget_crop']);
   }
 }
+
+/**
+ * Implements hook_imce_supported_widgets_alter().
+ *
+ * If Imce module installed and enabled.
+ * If Imce & ImageWidgetCrop modules both installed and enabled.
+ */
+function imagefield_tokens_imce_supported_widgets_alter(&$widgets) {
+  $moduleHandler = \Drupal::service('module_handler');
+  if ($moduleHandler->moduleExists('imce')) {
+    $widgets[] = 'imagefield_tokens';
+    if ($moduleHandler->moduleExists('image_widget_crop')) {
+      $widgets[] = 'imagefield_tokens_widget_crop';
+    }
+  }
+}

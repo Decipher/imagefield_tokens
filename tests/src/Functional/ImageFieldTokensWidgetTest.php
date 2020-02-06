@@ -23,6 +23,7 @@ class ImageFieldTokensWidgetTest extends ImageFieldTestBase {
    *
    * @see \Drupal\Core\Config\Development\ConfigSchemaChecker
    */
+  //@codingStandardsIgnoreLine
   protected $strictConfigSchema = FALSE;
 
   /**
