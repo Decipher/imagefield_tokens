@@ -105,6 +105,14 @@ class ImageFieldTokensFormatterTest extends ImageFieldTestBase {
 
     // Verify that the image has converted 'Alt' value for token [node:title].
     self::assertEquals($formatter_response_result[0]['#item']->alt, $node->getTitle(), 'Make sure ALT field has been processed correctly!');
+
+    // Make sure cache tags look ok. Since node token was replaced,
+    // the node cache tag should be on the render array.
+    // The file cache tag should be there no matter what.
+    $cache_tags = $formatter_response_result[0]['#cache']['tags'];
+    self::assertTrue(in_array("node:$nid", $cache_tags), 'Make sure ALT field has appropriate node cache tags.');
+    self::assertTrue(in_array("file:{$node->{$field_name}->target_id}", $cache_tags), 'Make sure ALT field has appropriate file cache tags.');
+
   }
 
 }

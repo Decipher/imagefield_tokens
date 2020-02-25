@@ -3,9 +3,11 @@
 namespace Drupal\imagefield_tokens\Plugin\Field\FieldFormatter;
 
 use Drupal\Core\Cache\Cache;
+use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
 use Drupal\image\Plugin\Field\FieldFormatter\ImageFormatter;
@@ -179,8 +181,10 @@ class ImageFieldTokensFormatter extends ImageFormatter {
         $data[$entity_type] = $entity;
       }
       // Replace entity tokens.
-      $alt_token = $this->tokenService->replace($item_values['alt'], $data);
-      $title_token = $this->tokenService->replace($item_values['title'], $data);
+      $alt_bubbles = new BubbleableMetadata();
+      $alt_token = $this->tokenService->replace($item_values['alt'], $data, [], $alt_bubbles);
+      $title_bubbles = new BubbleableMetadata();
+      $title_token = $this->tokenService->replace($item_values['title'], $data, [], $title_bubbles);
       // Set converted values to the item.
       $item_values['alt'] = $alt_token;
       $item_values['title'] = $title_token;
@@ -197,6 +201,12 @@ class ImageFieldTokensFormatter extends ImageFormatter {
           'contexts' => $cache_contexts,
         ],
       ];
+
+      // Add cache info related to tokens.
+      $existing_elements_cache = CacheableMetadata::createFromRenderArray($elements[$delta]);
+      $token_bubbleable_metadata = $alt_bubbles->merge($title_bubbles);
+      $updated_elements_cache = $existing_elements_cache->merge($token_bubbleable_metadata);
+      $updated_elements_cache->applyTo($elements[$delta]);
     }
 
     return $elements;
