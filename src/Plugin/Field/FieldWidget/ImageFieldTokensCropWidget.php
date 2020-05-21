@@ -6,6 +6,7 @@ use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\image_widget_crop\Plugin\Field\FieldWidget\ImageCropWidget;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * Plugin implementation of the 'image_widget_crop' widget.
@@ -102,10 +103,10 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
 
     // Add the additional alt and title fields.
     $element['alt'] = [
-      '#title' => t('Alternative text'),
+      '#title' => new TranslatableMarkup('Alternative text'),
       '#type' => 'textfield',
       '#default_value' => $alt_token ?? '',
-      '#description' => t('This text will be used by screen readers, search engines, or when the image cannot be loaded.'),
+      '#description' => new TranslatableMarkup('This text will be used by screen readers, search engines, or when the image cannot be loaded.'),
       // @see https://www.drupal.org/node/465106#alt-text
       '#maxlength' => 512,
       '#weight' => -12,
@@ -116,9 +117,9 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
 
     $element['title'] = [
       '#type' => 'textfield',
-      '#title' => t('Title'),
+      '#title' => new TranslatableMarkup('Title'),
       '#default_value' => $title_token ?? '',
-      '#description' => t('The title is used as a tool tip when the user hovers the mouse over the image.'),
+      '#description' => new TranslatableMarkup('The title is used as a tool tip when the user hovers the mouse over the image.'),
       '#maxlength' => 1024,
       '#weight' => -11,
       '#access' => (bool) $item['fids'] && $element['#title_field'],
