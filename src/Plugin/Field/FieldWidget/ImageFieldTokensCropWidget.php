@@ -2,11 +2,20 @@
 
 namespace Drupal\imagefield_tokens\Plugin\Field\FieldWidget;
 
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Config\Entity\ConfigEntityStorageInterface;
+use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\ElementInfoManagerInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\field\Entity\FieldConfig;
+use Drupal\image_widget_crop\ImageWidgetCropInterface;
 use Drupal\image_widget_crop\Plugin\Field\FieldWidget\ImageCropWidget;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Plugin implementation of the 'image_widget_crop' widget.
@@ -22,6 +31,75 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
 class ImageFieldTokensCropWidget extends ImageCropWidget {
 
   /**
+   * The current user.
+   *
+   * @var \Drupal\Core\Session\AccountInterface
+   */
+  protected $currentUser;
+
+  /**
+   * The module handler service.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
+  /**
+   * Constructs a new ImageFieldTokensCropWidget object.
+   *
+   * @param string $plugin_id
+   *   Plugin id.
+   * @param mixed $plugin_definition
+   *   Plugin definition.
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field_definition
+   *   Field definition.
+   * @param array $settings
+   *   Field settings.
+   * @param array $third_party_settings
+   *   Third party settings.
+   * @param \Drupal\Core\Render\ElementInfoManagerInterface $element_info
+   *   The element info manager.
+   * @param \Drupal\image_widget_crop\ImageWidgetCropInterface $iwc_manager
+   *   The ImageWidgetCrop manager service.
+   * @param \Drupal\Core\Entity\EntityStorageInterface $image_style_storage
+   *   The image style entity storage.
+   * @param \Drupal\Core\Config\Entity\ConfigEntityStorageInterface $crop_type_storage
+   *   The crop type storage.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   The configuration factory.
+   * @param \Drupal\Core\Session\AccountInterface $current_user
+   *   Current user service.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   *   The module handler.
+   */
+  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, array $third_party_settings, ElementInfoManagerInterface $element_info, ImageWidgetCropInterface $iwc_manager, EntityStorageInterface $image_style_storage, ConfigEntityStorageInterface $crop_type_storage, ConfigFactoryInterface $config_factory, AccountInterface $current_user, ModuleHandlerInterface $module_handler) {
+    parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $third_party_settings, $element_info, $iwc_manager, $image_style_storage, $crop_type_storage, $config_factory);
+    $this->currentUser = $current_user;
+    $this->moduleHandler = $module_handler;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $plugin_id,
+      $plugin_definition,
+      $configuration['field_definition'],
+      $configuration['settings'],
+      $configuration['third_party_settings'],
+      $container->get('element_info'),
+      $container->get('image_widget_crop.manager'),
+      $container->get('entity_type.manager')->getStorage('image_style'),
+      $container->get('entity_type.manager')->getStorage('crop_type'),
+      $container->get('config.factory'),
+      $container->get('current_user'),
+      $container->get('module_handler')
+    );
+
+  }
+
+  /**
    * {@inheritdoc}
    *
    * @return array[]
@@ -31,11 +109,10 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
     $element = parent::formElement($items, $delta, $element, $form, $form_state);
     $object = $form_state->getFormObject();
     $entity_type_id = $object->getEntity() ? $object->getEntity()->getEntityTypeId() : '';
-    if (!\Drupal::currentUser()->isAnonymous()) {
+    if (!$this->currentUser->isAnonymous()) {
       // Add token link to the form.
       $form['#token'] = TRUE;
-      $moduleHandler = \Drupal::service('module_handler');
-      if ($moduleHandler->moduleExists('token')) {
+      if ($this->moduleHandler->moduleExists('token')) {
         $form['token_tree'] = [
           '#theme' => 'token_tree_link',
           '#token_types' => [$entity_type_id],

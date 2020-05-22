@@ -2,12 +2,19 @@
 
 namespace Drupal\imagefield_tokens\Plugin\Field\FieldWidget;
 
+use Drupal\Core\Entity\EntityRepositoryInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Image\ImageFactory;
+use Drupal\Core\Render\ElementInfoManagerInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\file\Entity\File;
 use Drupal\image\Plugin\Field\FieldWidget\ImageWidget;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Plugin implementation of the 'image_image' widget.
@@ -21,6 +28,77 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
  * )
  */
 class ImageFieldTokensWigdet extends ImageWidget {
+
+  /**
+   * The current user.
+   *
+   * @var \Drupal\Core\Session\AccountInterface
+   */
+  protected $currentUser;
+
+  /**
+   * The module handler service.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
+  /**
+   * The entity repository.
+   *
+   * @var \Drupal\Core\Entity\EntityRepositoryInterface
+   */
+  protected $entityRepository;
+
+  /**
+   * Constructs a new ImageFieldTokensWigdet object.
+   *
+   * @param string $plugin_id
+   *   Plugin id.
+   * @param mixed $plugin_definition
+   *   Plugin definition.
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field_definition
+   *   Field definition.
+   * @param array $settings
+   *   Field settings.
+   * @param array $third_party_settings
+   *   Third party settings.
+   * @param \Drupal\Core\Render\ElementInfoManagerInterface $element_info
+   *   The element info manager.
+   * @param \Drupal\Core\Image\ImageFactory $image_factory
+   *   The image factory.
+   * @param \Drupal\Core\Session\AccountInterface $current_user
+   *   Current user service.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   *   The module handler.
+   * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
+   *   The entity repository.
+   */
+  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, array $third_party_settings, ElementInfoManagerInterface $element_info, ImageFactory $image_factory, AccountInterface $current_user, ModuleHandlerInterface $module_handler, EntityRepositoryInterface $entity_repository) {
+    parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $third_party_settings, $element_info, $image_factory);
+    $this->currentUser = $current_user;
+    $this->moduleHandler = $module_handler;
+    $this->entityRepository = $entity_repository;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $plugin_id,
+      $plugin_definition,
+      $configuration['field_definition'],
+      $configuration['settings'],
+      $configuration['third_party_settings'],
+      $container->get('element_info'),
+      $container->get('image.factory'),
+      $container->get('current_user'),
+      $container->get('module_handler'),
+      $container->get('entity.repository')
+    );
+
+  }
 
   /**
    * {@inheritdoc}
@@ -64,15 +142,14 @@ class ImageFieldTokensWigdet extends ImageWidget {
       $default_image = $this->fieldDefinition->getFieldStorageDefinition()->getSetting('default_image');
     }
     // Convert the stored UUID into a file ID.
-    if (!empty($default_image['uuid']) && $entity = \Drupal::service('entity.repository')->loadEntityByUuid('file', $default_image['uuid'])) {
+    if (!empty($default_image['uuid']) && $entity = $this->entityRepository->loadEntityByUuid('file', $default_image['uuid'])) {
       $default_image['fid'] = $entity->id();
     }
     $element['#default_image'] = !empty($default_image['fid']) ? $default_image : [];
-    if (!\Drupal::currentUser()->isAnonymous()) {
+    if (!$this->currentUser->isAnonymous()) {
       // Add token link to the form.
       $form['#token'] = TRUE;
-      $moduleHandler = \Drupal::service('module_handler');
-      if ($moduleHandler->moduleExists('token')) {
+      if ($this->moduleHandler->moduleExists('token')) {
         $form['token_tree'] = [
           '#theme' => 'token_tree_link',
           '#token_types' => [$entity_type_id],
