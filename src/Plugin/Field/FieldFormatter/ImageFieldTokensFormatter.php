@@ -104,7 +104,7 @@ class ImageFieldTokensFormatter extends ImageFormatter {
       $configuration['view_mode'],
       $configuration['third_party_settings'],
       $container->get('current_user'),
-      $container->get('entity.manager')->getStorage('image_style'),
+      $container->get('entity_type.manager')->getStorage('image_style'),
       $container->get('current_route_match'),
       $container->get('token')
     );
