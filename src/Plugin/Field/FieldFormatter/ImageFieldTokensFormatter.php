@@ -2,6 +2,7 @@
 
 namespace Drupal\imagefield_tokens\Plugin\Field\FieldFormatter;
 
+use Drupal\Component\Plugin\Exception\ContextException;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Entity\EntityStorageInterface;
@@ -177,8 +178,13 @@ class ImageFieldTokensFormatter extends ImageFormatter {
       }
       $data = [];
       if ($entity) {
-        $entity_type = (method_exists($entity, 'getEntityTypeId')) ? $entity->getEntityTypeId() : $entity->getContext('entity')->getContextData()->getValue('entity')->getEntityTypeId();
-        $data[$entity_type] = $entity;
+        try {
+          $entity_type = (method_exists($entity, 'getEntityTypeId')) ? $entity->getEntityTypeId() : $entity->getContext('entity')->getContextData()->getValue('entity')->getEntityTypeId();
+          $data[$entity_type] = $entity;
+        }
+        catch (ContextException $e) {
+          // No entity context. Not necessarily an error. Just keep going.
+        }
       }
       // Replace entity tokens.
       $alt_bubbles = new BubbleableMetadata();
