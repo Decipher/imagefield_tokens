@@ -15,6 +15,13 @@ use Drupal\Tests\TestFileCreationTrait;
 class ImageFieldTokensFormatterTest extends ImageFieldTestBase {
 
   /**
+   * The theme to install as the default for testing.
+   *
+   * @var string
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * Modules to enable.
    *
    * @var array

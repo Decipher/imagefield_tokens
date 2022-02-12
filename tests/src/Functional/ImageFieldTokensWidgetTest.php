@@ -17,6 +17,13 @@ use Drupal\file\Entity\File;
 class ImageFieldTokensWidgetTest extends ImageFieldTestBase {
 
   /**
+   * The theme to install as the default for testing.
+   *
+   * @var string
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * Set to TRUE to strict check all configuration saved.
    *
    * @var bool
