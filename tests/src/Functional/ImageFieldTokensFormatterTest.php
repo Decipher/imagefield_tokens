@@ -26,7 +26,7 @@ class ImageFieldTokensFormatterTest extends ImageFieldTestBase {
    *
    * @var array
    */
-  public static $modules = ['field_ui', 'image', 'token', 'imagefield_tokens'];
+  protected static $modules = ['field_ui', 'image', 'token', 'imagefield_tokens'];
 
   use AssertPageCacheContextsAndTagsTrait;
   use ImageFieldTokensTestingTrait;
@@ -63,7 +63,7 @@ class ImageFieldTokensFormatterTest extends ImageFieldTestBase {
     $this->drupalGet('admin/structure/types/manage/article/display');
 
     // Test for existence of link to image styles configuration.
-    $this->drupalPostForm(NULL, [], "{$field_name}_settings_edit");
+    $this->submitForm([], "{$field_name}_settings_edit");
     $this->assertSession()->linkByHrefExists(Url::fromRoute('entity.image_style.collection')->toString(), 0, 'Link to image styles configuration is found');
 
     // Remove 'administer image styles' permission from testing admin user.
@@ -74,7 +74,7 @@ class ImageFieldTokensFormatterTest extends ImageFieldTestBase {
     $this->drupalGet('admin/structure/types/manage/article/display');
 
     // Test for absence of link to image styles configuration.
-    $this->drupalPostForm(NULL, [], "{$field_name}_settings_edit");
+    $this->submitForm([], "{$field_name}_settings_edit");
     $this->assertSession()->linkByHrefNotExists(Url::fromRoute('entity.image_style.collection')->toString(), 'Link to image styles configuration is absent when permissions are insufficient');
 
     // Restore 'administer image styles' permission to testing admin user.

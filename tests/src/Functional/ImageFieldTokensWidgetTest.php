@@ -38,7 +38,7 @@ class ImageFieldTokensWidgetTest extends ImageFieldTestBase {
    *
    * @var array
    */
-  public static $modules = ['node', 'image', 'token', 'imagefield_tokens'];
+  protected static $modules = ['node', 'image', 'token', 'imagefield_tokens'];
 
   use AssertPageCacheContextsAndTagsTrait;
   use ImageFieldTokensTestingTrait;
@@ -69,8 +69,10 @@ class ImageFieldTokensWidgetTest extends ImageFieldTestBase {
 
     $this->createImageFieldTokensField($field_name, 'article', ['uri_scheme' => 'public'], $field_settings);
     $this->drupalGet('node/add/article');
-    $this->assertNotEqual(0, count($this->xpath('//div[contains(@class, "field--widget-imagefield-tokens")]')), 'Image field widget found on add/node page', 'Browser');
-    $this->assertNotEqual(0, count($this->xpath('//input[contains(@accept, "image/*")]')), 'Image field widget limits accepted files.', 'Browser');
+    // Assert that image field widget is found on node/add page.
+    $this->assertSession()->elementExists('xpath', '//div[contains(@class, "field--widget-imagefield-tokens")]');
+    // Assert that image field widget limits accepted files.
+    $this->assertSession()->elementExists('xpath', '//input[contains(@accept, "image/*")]');
     $this->assertSession()->pageTextNotContains('Image test on [site:name]');
 
     // Check for allowed image file extensions - default.

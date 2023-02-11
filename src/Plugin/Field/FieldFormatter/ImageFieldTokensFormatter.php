@@ -8,6 +8,7 @@ use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\File\FileUrlGeneratorInterface;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
@@ -81,13 +82,15 @@ class ImageFieldTokensFormatter extends ImageFormatter {
    *   The current user.
    * @param \Drupal\Core\Entity\EntityStorageInterface $image_style_storage
    *   The image style storage.
+   * @param \Drupal\Core\File\FileUrlGeneratorInterface $file_url_generator
+   *   The file URL generator.
    * @param \Drupal\Core\Routing\CurrentRouteMatch $routeMatch
    *   RouteMatch service.
    * @param \Drupal\token\Token $tokenService
    *   Token service.
    */
-  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, $label, $view_mode, array $third_party_settings, AccountInterface $current_user, EntityStorageInterface $image_style_storage, CurrentRouteMatch $routeMatch, Token $tokenService) {
-    parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $label, $view_mode, $third_party_settings, $current_user, $image_style_storage);
+  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, $label, $view_mode, array $third_party_settings, AccountInterface $current_user, EntityStorageInterface $image_style_storage, FileUrlGeneratorInterface $file_url_generator, CurrentRouteMatch $routeMatch, Token $tokenService) {
+    parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $label, $view_mode, $third_party_settings, $current_user, $image_style_storage, $file_url_generator);
     $this->routeMatch = $routeMatch;
     $this->tokenService = $tokenService;
   }
@@ -106,6 +109,7 @@ class ImageFieldTokensFormatter extends ImageFormatter {
       $configuration['third_party_settings'],
       $container->get('current_user'),
       $container->get('entity_type.manager')->getStorage('image_style'),
+      $container->get('file_url_generator'),
       $container->get('current_route_match'),
       $container->get('token')
     );
@@ -150,13 +154,7 @@ class ImageFieldTokensFormatter extends ImageFormatter {
       $cache_contexts = [];
       if (isset($link_file)) {
         $image_uri = $file->getFileUri();
-        // @todo Wrap in file_url_transform_relative(). This is currently
-        // impossible. As a work-around, we currently add the 'url.site' cache
-        // context to ensure different file URLs are generated for different
-        // sites in a multisite setup, including HTTP and HTTPS versions of the
-        // same site. Fix in https://www.drupal.org/node/2646744.
-        $url = Url::fromUri(file_create_url($image_uri));
-        $cache_contexts[] = 'url.site';
+        $url = $this->fileUrlGenerator->generate($image_uri);
       }
       $cache_tags = Cache::mergeTags($base_cache_tags, $file->getCacheTags());
 
