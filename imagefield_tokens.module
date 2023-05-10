@@ -66,3 +66,13 @@ function imagefield_tokens_imce_supported_widgets_alter(&$widgets) {
     }
   }
 }
+
+/**
+ * Implements hook_field_formatter_info_alter().
+ */
+function imagefield_tokens_field_formatter_info_alter(array &$info) {
+  $moduleHandler = \Drupal::service('module_handler');
+  if (!$moduleHandler->moduleExists('colorbox')) {
+    unset($info['imagefield_tokens_colorbox']);
+  }
+}
