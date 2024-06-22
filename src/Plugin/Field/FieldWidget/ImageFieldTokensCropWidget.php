@@ -113,11 +113,13 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
       // Add token link to the form.
       $form['#token'] = TRUE;
       if ($this->moduleHandler->moduleExists('token')) {
-        $form['token_tree'] = [
+        $element['token_tree'] = [
           '#theme' => 'token_tree_link',
           '#token_types' => [$entity_type_id],
           '#show_restricted' => TRUE,
           '#weight' => 90,
+          '#prefix' => '<div class="token-token">',
+          '#suffix' => '</div>',
         ];
       }
     }
