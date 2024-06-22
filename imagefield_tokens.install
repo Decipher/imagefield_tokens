@@ -1,0 +1,13 @@
+<?php
+
+/**
+ * @file
+ * Contains functions related to the module functionality and Drupal hooks.
+ */
+
+/**
+ * Enable media_library module for Media support.
+ */
+function imagefield_tokens_update_10201() {
+  \Drupal::service('module_installer')->install(['media_library']);
+}

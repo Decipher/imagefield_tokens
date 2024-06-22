@@ -6,3 +6,4 @@ package: Image
 dependencies:
   - token:token
   - drupal:image
+  - drupal:media_library
