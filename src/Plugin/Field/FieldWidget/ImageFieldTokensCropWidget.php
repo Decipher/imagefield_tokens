@@ -15,6 +15,7 @@ use Drupal\field\Entity\FieldConfig;
 use Drupal\image_widget_crop\ImageWidgetCropInterface;
 use Drupal\image_widget_crop\Plugin\Field\FieldWidget\ImageCropWidget;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\media_library\Form\AddFormBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -107,8 +108,17 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $element = parent::formElement($items, $delta, $element, $form, $form_state);
+    $entity_type_id = '';
     $object = $form_state->getFormObject();
-    $entity_type_id = $object->getEntity() ? $object->getEntity()->getEntityTypeId() : '';
+    $get_entity = method_exists($object, 'getEntity');
+    if ($get_entity) {
+      $entity_type_id = $object->getEntity() ? $object->getEntity()->getEntityTypeId() : '';
+    }
+    // When not on an entity form. Try to detect entity type with another way.
+    elseif (empty($entity_type_id) && isset($element['#entity_type'])) {
+      $entity_type_id = $element['#entity_type'];
+    }
+
     if (!$this->currentUser->isAnonymous()) {
       // Add token link to the form.
       $form['#token'] = TRUE;
@@ -148,13 +158,23 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
 
     if ($get_entity) {
       $current_entity = $form_object->getEntity();
-      if (!empty($current_entity)) {
-        $entity_type = $current_entity->getEntityTypeId();
-        $entity_bundle = $current_entity->bundle();
-        $field_name = $element['#field_name'];
-        $field_config = FieldConfig::loadByName($entity_type, $entity_bundle, $field_name);
-        $field_settings = $field_config->getSettings();
+    }
+    // Support for media library.
+    elseif ($form_object instanceof AddFormBase) {
+      $form_storage = $form_state->getStorage();
+      if (isset($form_storage['media'][0])) {
+        $current_entity = $form_storage['media'][0];
       }
+    }
+
+    if (!empty($current_entity)) {
+      // Get entity data.
+      $entity_type = $current_entity->getEntityTypeId();
+      $entity_bundle = $current_entity->bundle();
+      // Get field settings.
+      $field_name = $element['#field_name'];
+      $field_config = FieldConfig::loadByName($entity_type, $entity_bundle, $field_name);
+      $field_settings = $field_config->getSettings();
     }
 
     $item = $element['#value'];
