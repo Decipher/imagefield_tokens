@@ -34,20 +34,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class ImageFieldTokensFormatter extends ImageFormatter {
 
   /**
-   * The current user.
-   *
-   * @var \Drupal\Core\Session\AccountInterface
-   */
-  protected $currentUser;
-
-  /**
-   * The image style entity storage.
-   *
-   * @var \Drupal\image\ImageStyleStorageInterface
-   */
-  protected $imageStyleStorage;
-
-  /**
    * RouteMatch service.
    *
    * @var \Drupal\Core\Routing\CurrentRouteMatch
