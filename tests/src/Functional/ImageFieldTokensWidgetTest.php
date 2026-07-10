@@ -242,4 +242,26 @@ class ImageFieldTokensWidgetTest extends ImageFieldTestBase {
     self::assertEquals('Stored Title', $title_element[0]->getValue(), 'Stored title takes precedence over default.');
   }
 
+  /**
+   * Tests that AJAX infrastructure from FileWidget::process() is preserved.
+   *
+   * Regression test for #3260098, #3311541, #3292050: the IFT widget's
+   * process() must call parent::process() so that upload/remove buttons,
+   * AJAX wrappers, and cardinality management are present.
+   */
+  public function testAjaxInfrastructurePresent(): void {
+    $field_name = strtolower($this->randomMachineName());
+    $field_settings = [
+      'alt_field' => 1,
+    ];
+    $this->createImageFieldTokensField($field_name, 'article', [], $field_settings);
+
+    $this->drupalGet('node/add/article');
+
+    // Verify upload button with AJAX callback exists.
+    $this->assertSession()->elementExists('xpath', "//input[contains(@name, 'upload_button')]");
+    // Verify AJAX wrapper prefix exists (added by FileWidget::process()).
+    $this->assertSession()->elementExists('xpath', "//div[contains(@class, 'js-form-managed-file')]");
+  }
+
 }

@@ -13,9 +13,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Image\ImageFactory;
 use Drupal\Core\Render\ElementInfoManagerInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\file\Entity\File;
 use Drupal\image\Plugin\Field\FieldWidget\ImageWidget;
-use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\media_library\Form\AddFormBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -226,7 +224,12 @@ class ImageFieldTokensWigdet extends ImageWidget {
   }
 
   /**
-   * {@inheritdoc}
+   * Form API callback: Processes an image_image field element.
+   *
+   * Expands the image_image type to include the alt and title fields with
+   * token replacement support.
+   *
+   * This method is assigned as a #process callback in formElement() method.
    *
    * @phpstan-param mixed $element
    * @phpstan-param mixed $form
@@ -254,116 +257,41 @@ class ImageFieldTokensWigdet extends ImageWidget {
 
     $item = $element['#value'];
     $item['fids'] = $element['fids']['#value'];
-    $alt_token = '';
-    $title_token = '';
+
     // Fill alt & title fields from widget settings if they are empty.
     if (empty($item['alt']) && !empty($element['#default_alt'])) {
-      $item['alt'] = $element['#default_alt'];
+      $element['#value']['alt'] = $element['#default_alt'];
     }
     if (empty($item['title']) && !empty($element['#default_title'])) {
-      $item['title'] = $element['#default_title'];
+      $element['#value']['title'] = $element['#default_title'];
     }
 
-    $element['#theme'] = 'image_widget';
+    // Call parent process to set up AJAX handlers, buttons, preview,
+    // alt/title text fields, and all other ManagedFile infrastructure.
+    $element = parent::process($element, $form_state, $form);
 
-    // Add the image preview.
-    if (!empty($element['#files']) && $element['#preview_image_style']) {
-      $file = reset($element['#files']);
-      $variables = [
-        'style_name' => $element['#preview_image_style'],
-        'uri' => $file->getFileUri(),
-      ];
+    // Apply token replacement to alt/title default values.
+    $alt_value = $element['alt']['#default_value'] ?? '';
+    $title_value = $element['title']['#default_value'] ?? '';
 
-      // Determine image dimensions.
-      if (isset($element['#value']['width']) && isset($element['#value']['height'])) {
-        $variables['width'] = $element['#value']['width'];
-        $variables['height'] = $element['#value']['height'];
-      }
-      else {
-        $image = \Drupal::service('image.factory')->get($file->getFileUri());
-        if ($image->isValid()) {
-          $variables['width'] = $image->getWidth();
-          $variables['height'] = $image->getHeight();
-        }
-        else {
-          $variables['width'] = $variables['height'] = NULL;
-        }
-      }
+    $alt_token = '';
+    $title_token = '';
 
-      $element['preview'] = [
-        '#weight' => -10,
-        '#theme' => 'image_style',
-        '#width' => $variables['width'],
-        '#height' => $variables['height'],
-        '#style_name' => $variables['style_name'],
-        '#uri' => $variables['uri'],
-      ];
-
-      // Store the dimensions in the form so the file doesn't have to be
-      // accessed again. This is important for remote files.
-      $element['width'] = [
-        '#type' => 'hidden',
-        '#value' => $variables['width'],
-      ];
-      $element['height'] = [
-        '#type' => 'hidden',
-        '#value' => $variables['height'],
-      ];
-    }
-    elseif (!empty($element['#default_image'])) {
-      $default_image = $element['#default_image'];
-      $file = File::load($default_image['fid']);
-      if (!empty($file)) {
-        $element['preview'] = [
-          '#weight' => -10,
-          '#theme' => 'image_style',
-          '#width' => $default_image['width'],
-          '#height' => $default_image['height'],
-          '#style_name' => $element['#preview_image_style'],
-          '#uri' => $file->getFileUri(),
-        ];
-      }
-    }
-
-    if (isset($item['alt'])) {
-      $alt_token = \Drupal::token()->replace($item['alt'], [$entity_type => $current_entity]);
+    if (!empty($alt_value)) {
+      $alt_token = \Drupal::token()->replace($alt_value, [$entity_type => $current_entity]);
       if (empty($alt_token)) {
-        $alt_token = $item['alt'];
+        $alt_token = $alt_value;
       }
     }
-    if (isset($item['title'])) {
-      $title_token = \Drupal::token()->replace($item['title'], [$entity_type => $current_entity]);
+    if (!empty($title_value)) {
+      $title_token = \Drupal::token()->replace($title_value, [$entity_type => $current_entity]);
       if (empty($title_token)) {
-        $title_token = $item['title'];
+        $title_token = $title_value;
       }
     }
 
-    // Add the additional alt and title fields.
-    $element['alt'] = [
-      '#title' => new TranslatableMarkup('Alternative text'),
-      '#type' => 'textfield',
-      '#default_value' => $alt_token ?? '',
-      '#description' => new TranslatableMarkup('This text will be used by screen readers, search engines, or when the image cannot be loaded.'),
-      // @see https://www.drupal.org/node/465106#alt-text
-      '#maxlength' => 512,
-      '#weight' => -12,
-      '#access' => (bool) $item['fids'] && $element['#alt_field'],
-      '#required' => $element['#alt_field_required'],
-      '#element_validate' => $element['#alt_field_required'] ? [[static::class, 'validateRequiredFields']] : [],
-    ];
-
-    $element['title'] = [
-      '#type' => 'textfield',
-      '#title' => new TranslatableMarkup('Title'),
-      '#default_value' => $title_token ?? '',
-      '#description' => new TranslatableMarkup('The title is used as a tool tip when the user hovers the mouse over the image.'),
-      '#maxlength' => 1024,
-      '#weight' => -11,
-      '#access' => (bool) $item['fids'] && $element['#title_field'],
-      '#required' => $element['#title_field_required'],
-      '#element_validate' => $element['#title_field_required'] ? [[static::class, 'validateRequiredFields']] : [],
-    ];
-
+    $element['alt']['#default_value'] = $alt_token;
+    $element['title']['#default_value'] = $title_token;
     $element['#value']['alt'] = $alt_token;
     $element['#value']['title'] = $title_token;
 
