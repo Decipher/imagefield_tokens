@@ -14,7 +14,6 @@ use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\ElementInfoManagerInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\field\Entity\FieldConfig;
 use Drupal\image_widget_crop\ImageWidgetCropInterface;
 use Drupal\image_widget_crop\Plugin\Field\FieldWidget\ImageCropWidget;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
@@ -33,6 +32,70 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * )
  */
 class ImageFieldTokensCropWidget extends ImageCropWidget {
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function defaultSettings() {
+    return [
+      'default_alt' => '',
+      'default_title' => '',
+    ] + parent::defaultSettings();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function settingsForm(array $form, FormStateInterface $form_state) {
+    $form = parent::settingsForm($form, $form_state);
+
+    $form['default_alt'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Default alternative text'),
+      '#default_value' => $this->getSetting('default_alt'),
+      '#description' => $this->t('Token-based default value for the alt attribute. Used when the stored alt is empty.'),
+      '#maxlength' => 512,
+    ];
+
+    $form['default_title'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Default title'),
+      '#default_value' => $this->getSetting('default_title'),
+      '#description' => $this->t('Token-based default value for the title attribute. Used when the stored title is empty.'),
+      '#maxlength' => 1024,
+    ];
+
+    if ($this->moduleHandler->moduleExists('token')) {
+      $entity_type_id = $this->fieldDefinition->getTargetEntityTypeId();
+      $form['token_tree'] = [
+        '#theme' => 'token_tree_link',
+        '#token_types' => [$entity_type_id],
+        '#show_restricted' => TRUE,
+        '#weight' => 90,
+      ];
+    }
+
+    return $form;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function settingsSummary() {
+    $summary = parent::settingsSummary();
+
+    $default_alt = $this->getSetting('default_alt');
+    $default_title = $this->getSetting('default_title');
+
+    if (!empty($default_alt)) {
+      $summary[] = $this->t('Default alt: @value', ['@value' => $default_alt]);
+    }
+    if (!empty($default_title)) {
+      $summary[] = $this->t('Default title: @value', ['@value' => $default_title]);
+    }
+
+    return $summary;
+  }
 
   /**
    * Constructs a new ImageFieldTokensCropWidget object.
@@ -95,6 +158,11 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $element = parent::formElement($items, $delta, $element, $form, $form_state);
     $entity_type_id = '';
+
+    // Pass widget settings for token-based defaults.
+    $element['#default_alt'] = $this->getSetting('default_alt');
+    $element['#default_title'] = $this->getSetting('default_title');
+
     $object = $form_state->getFormObject();
     if ($object instanceof EntityFormInterface) {
       $entity_type_id = $object->getEntity()->getEntityTypeId();
@@ -155,13 +223,7 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
     }
 
     if (!empty($current_entity)) {
-      // Get entity data.
       $entity_type = $current_entity->getEntityTypeId();
-      $entity_bundle = $current_entity->bundle();
-      // Get field settings.
-      $field_name = $element['#field_name'];
-      $field_config = FieldConfig::loadByName($entity_type, $entity_bundle, $field_name);
-      $field_settings = $field_config->getSettings();
     }
 
     $item = $element['#value'];
@@ -169,13 +231,12 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
     $alt_token = '';
     $title_token = '';
 
-    if (!empty($field_settings) && !empty($field_settings['default_image'])) {
-      if (empty($item['alt'])) {
-        $item['alt'] = $field_settings['default_image']['alt'];
-      }
-      if (empty($item['title'])) {
-        $item['title'] = $field_settings['default_image']['title'];
-      }
+    // Fill alt & title fields from widget settings if they are empty.
+    if (empty($item['alt']) && !empty($element['#default_alt'])) {
+      $item['alt'] = $element['#default_alt'];
+    }
+    if (empty($item['title']) && !empty($element['#default_title'])) {
+      $item['title'] = $element['#default_title'];
     }
 
     if (isset($item['alt'])) {
