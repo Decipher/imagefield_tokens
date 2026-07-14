@@ -1,0 +1,13 @@
+{
+  "name": "@drupal/imagefield_tokens",
+  "version": "0.1.0",
+  "description": "Provides token-aware Image field widget and formatter.",
+  "license": "GPL-2.0-or-later",
+  "private": true,
+  "scripts": {
+    "lint-spell": "cspell --no-progress"
+  },
+  "devDependencies": {
+    "cspell": "^8.0.0"
+  }
+}
