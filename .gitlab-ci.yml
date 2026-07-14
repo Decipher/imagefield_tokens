@@ -27,7 +27,7 @@ variables:
   SKIP_ESLINT: '1'
   SKIP_STYLELINT: '1'
   _PHPUNIT_EXTRA: '--no-coverage --configuration=phpunit.gitlab-ci.xml'
-  _CSPELL_WORDS: 'Wigdet, imagefield, colorbox, Colorbox, imce, Imce, eosrei, Samoilenko, Yaroslav, ysamoylenko, cloudflared, ddev, lando, drevops, skrypnyk, pushd, popd, ahoy, phpcbf, phpcs, phpstan, rector, twigcsfixer, simpletest, drush, pcov, docblocks, normalise, initialisation, initialised, langcode, langid, multisite'
+  _CSPELL_WORDS: 'Wigdet, imagefield, colorbox, Colorbox, imce, Imce, eosrei, Samoilenko, Yaroslav, ysamoylenko, cloudflared, ddev, lando, drevops, skrypnyk, pushd, popd, ahoy, phpcbf, phpcs, phpstan, rector, twigcsfixer, simpletest, drush, pcov, docblocks, normalise, initialisation, initialised, langcode, langid, multisite, analyse'
   OPT_IN_TEST_NEXT_MINOR: '1'
   OPT_IN_TEST_NEXT_MAJOR: '0'
   OPT_IN_TEST_MAX_PHP: '1'
