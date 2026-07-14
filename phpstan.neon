@@ -1,0 +1,90 @@
+##
+# Configuration file for PHPStan static code checking, see https://phpstan.org .
+#
+# Note that drupal-specific rules are automatically included by phpstan/extension-installer
+# from vendor/mglaman/phpstan-drupal/extension.neon and vendor/mglaman/phpstan-drupal/rules.neon
+# @see https://github.com/mglaman/phpstan-drupal
+#
+# Paths are passed as CLI arguments.
+
+parameters:
+
+  level: 6
+
+  paths:
+    - web/modules/custom
+
+  excludePaths:
+    analyseAndScan:
+      - vendor/*
+      - node_modules/*
+      - ../*/node_modules/*
+      - rector.php
+      # Optional integration files whose base classes come from contrib
+      # modules (colorbox, image_widget_crop) not installed in CI. PHPStan
+      # treats "extends unknown class" as non-ignorable via ignoreErrors, so
+      # these files are excluded from analysis entirely instead. Listed both
+      # relative to the module root (GitLab CI, official Drupal.org
+      # templates, run phpstan from within the module directory) and nested
+      # under an assembled site's web/modules/custom (GitHub Actions'
+      # .devtools/assemble builds a full site under build/). Each is marked
+      # "(?)" optional since only one form exists in a given CI context.
+      - src/Plugin/Field/FieldFormatter/ColorboxFormatter.php (?)
+      - src/Plugin/Field/FieldWidget/ImageFieldTokensCropWidget.php (?)
+      - web/modules/custom/imagefield_tokens/src/Plugin/Field/FieldFormatter/ColorboxFormatter.php (?)
+      - web/modules/custom/imagefield_tokens/src/Plugin/Field/FieldWidget/ImageFieldTokensCropWidget.php (?)
+
+  ignoreErrors:
+    -
+      # Hook implementations do not provide docblocks for parameters, so there
+      # is no way to provide this information.
+      messages:
+        - '#.* no value type specified in iterable type array#'
+        - '#.* has no return type specified#'
+      reportUnmatched: false
+    -
+      # Drupal's dependency injection pattern uses new static() in create().
+      # This is safe because the constructor signature matches the factory.
+      messages:
+        - '#Unsafe usage of new static\(\)#'
+      reportUnmatched: false
+    -
+      # DeprecationHelper::backwardsCompatibleCall uses closures that PHPStan
+      # cannot resolve. This is a known limitation with the Drupal utility.
+      messages:
+        - '#contains unresolvable type#'
+        - '#Return type of call to static method.*DeprecationHelper.*contains unresolvable type#'
+        - '#argument.unresolvableType#'
+        - '#staticMethod.unresolvableReturnType#'
+      reportUnmatched: false
+    -
+      # Drupal 11.4 cross-version compat requires \Drupal::service() in the
+      # constructor (before DI is available) for ImageDerivativeUtilities.
+      messages:
+        - '#\\Drupal calls should be avoided in classes, use dependency injection instead#'
+        - '#globalDrupalDependencyInjection#'
+      reportUnmatched: false
+    -
+      # Render arrays have mixed integer/string keys. PHPStan infers int keys
+      # but properties like #attached use string keys.
+      messages:
+        - '#Strict comparison using !== between int and#'
+      reportUnmatched: false
+    -
+      # Test framework type resolution issues. These are false positives caused
+      # by PHPStan's inability to resolve dynamic test base class types.
+      messages:
+        - '#PHPDoc type array of property.*is not covariant#'
+        - '#PHPDoc tag @throws with type.*is not subtype of Throwable#'
+        - '#Call to an undefined method Drupal\\Tests\\WebAssert::#'
+        - '#Call to an undefined method Drupal\\field\\FieldConfigInterface::setSetting#'
+        - '#Cannot access property \$uri on object\|false#'
+        - '#Call to method getValue\(\) on an unknown class Behat#'
+        - '#expects Drupal\\Core\\Image\\ImageInterface, object\|false given#'
+        - '#expects stdClass, object\|false given#'
+        - '#property\.phpDocType#'
+        - '#method\.notFound#'
+        - '#property\.nonObject#'
+      reportUnmatched: false
+
+  reportUnmatchedIgnoredErrors: false

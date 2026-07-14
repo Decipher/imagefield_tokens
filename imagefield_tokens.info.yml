@@ -1,7 +1,7 @@
-name: Image Field Tokens
+name: ImageField Tokens
 type: module
 description: Provides new widget type for Image field to allow to use tokens for filling Alt and Title image attributes.
-core_version_requirement: ^9.3 || ^10 || ^11
+core_version_requirement: ^10 || ^11
 package: Image
 dependencies:
   - token:token
