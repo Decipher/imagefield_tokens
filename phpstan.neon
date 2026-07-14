@@ -15,16 +15,24 @@ parameters:
     - web/modules/custom
 
   excludePaths:
-    - vendor/*
-    - node_modules/*
-    - ../*/node_modules/*
-    - rector.php
-    # Optional integration files whose base classes come from contrib modules
-    # (colorbox, image_widget_crop) not installed in CI. PHPStan treats
-    # "extends unknown class" as non-ignorable via ignoreErrors, so these
-    # files are excluded from analysis entirely instead.
-    - src/Plugin/Field/FieldFormatter/ColorboxFormatter.php
-    - src/Plugin/Field/FieldWidget/ImageFieldTokensCropWidget.php
+    analyseAndScan:
+      - vendor/*
+      - node_modules/*
+      - ../*/node_modules/*
+      - rector.php
+      # Optional integration files whose base classes come from contrib
+      # modules (colorbox, image_widget_crop) not installed in CI. PHPStan
+      # treats "extends unknown class" as non-ignorable via ignoreErrors, so
+      # these files are excluded from analysis entirely instead. Listed both
+      # relative to the module root (GitLab CI, official Drupal.org
+      # templates, run phpstan from within the module directory) and nested
+      # under an assembled site's web/modules/custom (GitHub Actions'
+      # .devtools/assemble builds a full site under build/). Each is marked
+      # "(?)" optional since only one form exists in a given CI context.
+      - src/Plugin/Field/FieldFormatter/ColorboxFormatter.php (?)
+      - src/Plugin/Field/FieldWidget/ImageFieldTokensCropWidget.php (?)
+      - web/modules/custom/imagefield_tokens/src/Plugin/Field/FieldFormatter/ColorboxFormatter.php (?)
+      - web/modules/custom/imagefield_tokens/src/Plugin/Field/FieldWidget/ImageFieldTokensCropWidget.php (?)
 
   ignoreErrors:
     -
