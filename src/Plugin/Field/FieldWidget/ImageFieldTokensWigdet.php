@@ -22,7 +22,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @FieldWidget(
  *   id = "imagefield_tokens",
- *   label = @Translation("Image Field Tokens"),
+ *   label = @Translation("ImageField Tokens"),
  *   field_types = {
  *     "image"
  *   }
