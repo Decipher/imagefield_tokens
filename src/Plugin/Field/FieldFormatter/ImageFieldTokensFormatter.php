@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\imagefield_tokens\Plugin\Field\FieldFormatter;
 
+use Drupal\Component\Utility\DeprecationHelper;
 use Drupal\Component\Plugin\Exception\ContextException;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheableMetadata;
@@ -11,7 +14,8 @@ use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\File\FileUrlGeneratorInterface;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\Url;
+use Drupal\file\FileInterface;
+use Drupal\image\ImageDerivativeUtilities;
 use Drupal\image\Plugin\Field\FieldFormatter\ImageFormatter;
 use Drupal\Core\Routing\CurrentRouteMatch;
 use Drupal\token\Token;
@@ -32,20 +36,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * )
  */
 class ImageFieldTokensFormatter extends ImageFormatter {
-
-  /**
-   * RouteMatch service.
-   *
-   * @var \Drupal\Core\Routing\CurrentRouteMatch
-   */
-  protected $routeMatch;
-
-  /**
-   * Token service.
-   *
-   * @var \Drupal\token\Token
-   */
-  protected $tokenService;
 
   /**
    * Constructs an ImageFormatter object.
@@ -75,16 +65,25 @@ class ImageFieldTokensFormatter extends ImageFormatter {
    * @param \Drupal\token\Token $tokenService
    *   Token service.
    */
-  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, $label, $view_mode, array $third_party_settings, AccountInterface $current_user, EntityStorageInterface $image_style_storage, FileUrlGeneratorInterface $file_url_generator, CurrentRouteMatch $routeMatch, Token $tokenService) {
-    parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $label, $view_mode, $third_party_settings, $current_user, $image_style_storage, $file_url_generator);
-    $this->routeMatch = $routeMatch;
-    $this->tokenService = $tokenService;
+  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, $label, $view_mode, array $third_party_settings, AccountInterface $current_user, EntityStorageInterface $image_style_storage, FileUrlGeneratorInterface $file_url_generator, protected CurrentRouteMatch $routeMatch, protected Token $tokenService) {
+    $parent_args = [
+      $plugin_id, $plugin_definition, $field_definition, $settings,
+      $label, $view_mode, $third_party_settings, $current_user,
+      $image_style_storage, $file_url_generator,
+    ];
+    // Drupal 11.4 added ImageDerivativeUtilities as a required parameter.
+    if (class_exists(ImageDerivativeUtilities::class)) {
+      // phpcs:ignore DrupalPractice.Objects.GlobalDrupal.GlobalDrupal
+      $parent_args[] = \Drupal::service(ImageDerivativeUtilities::class);
+    }
+    // @phpstan-ignore arguments.count
+    parent::__construct(...$parent_args);
   }
 
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition): static {
     return new static(
       $plugin_id,
       $plugin_definition,
@@ -103,8 +102,11 @@ class ImageFieldTokensFormatter extends ImageFormatter {
 
   /**
    * {@inheritdoc}
+   *
+   * @return mixed[]
+   *   A render array for the field.
    */
-  public function viewElements(FieldItemListInterface $items, $langcode) {
+  public function viewElements(FieldItemListInterface $items, $langcode): array {
     $elements = [];
     $entity = NULL;
     $files = $this->getEntitiesToView($items, $langcode);
@@ -137,6 +139,7 @@ class ImageFieldTokensFormatter extends ImageFormatter {
     }
 
     foreach ($files as $delta => $file) {
+      \assert($file instanceof FileInterface);
       $cache_contexts = [];
       if (isset($link_file)) {
         $image_uri = $file->getFileUri();
@@ -146,6 +149,7 @@ class ImageFieldTokensFormatter extends ImageFormatter {
 
       // Extract field item attributes for the theme function, and unset them
       // from the $item so that the field template does not re-render them.
+      // @phpstan-ignore property.notFound
       $item = $file->_referringItem;
       $item_attributes = $item->_attributes;
       unset($item->_attributes);
@@ -163,10 +167,16 @@ class ImageFieldTokensFormatter extends ImageFormatter {
       $data = [];
       if ($entity) {
         try {
-          $entity_type = (method_exists($entity, 'getEntityTypeId')) ? $entity->getEntityTypeId() : $entity->getContext('entity')->getContextData()->getValue('entity')->getEntityTypeId();
-          $data[$entity_type] = $entity;
+          // @phpstan-ignore method.notFound
+          if (method_exists($entity, 'getEntityTypeId')) {
+            $data[$entity->getEntityTypeId()] = $entity;
+          }
+          elseif (method_exists($entity, 'getContext')) {
+            $entity_type = $entity->getContext('entity')->getContextData()->getValue('entity')->getEntityTypeId();
+            $data[$entity_type] = $entity;
+          }
         }
-        catch (ContextException $e) {
+        catch (ContextException) {
           // No entity context. Not necessarily an error. Just keep going.
         }
       }
@@ -180,7 +190,17 @@ class ImageFieldTokensFormatter extends ImageFormatter {
       $item_values['title'] = $title_token;
       $item->setValue($item_values);
 
-      $elements[$delta] = [
+      $elements[$delta] = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.4.0', fn(): array => [
+        '#theme' => 'image_formatter',
+        '#item' => $item,
+        '#attributes' => $item_attributes,
+        '#image_style' => $image_style_setting,
+        '#url' => $url,
+        '#cache' => [
+          'tags' => $cache_tags,
+          'contexts' => $cache_contexts,
+        ],
+      ], fn(): array => [
         '#theme' => 'image_formatter',
         '#item' => $item,
         '#item_attributes' => $item_attributes,
@@ -190,7 +210,7 @@ class ImageFieldTokensFormatter extends ImageFormatter {
           'tags' => $cache_tags,
           'contexts' => $cache_contexts,
         ],
-      ];
+      ]);
 
       // Add cache info related to tokens.
       $existing_elements_cache = CacheableMetadata::createFromRenderArray($elements[$delta]);

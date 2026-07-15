@@ -1,7 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\imagefield_tokens\Functional;
 
+use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\node\Entity\Node;
 use Drupal\Tests\image\Functional\ImageFieldTestBase;
@@ -14,6 +18,8 @@ use Drupal\file\Entity\File;
  *
  * @group image
  */
+#[Group('image')]
+#[RunTestsInSeparateProcesses]
 class ImageFieldTokensWidgetTest extends ImageFieldTestBase {
 
   /**
@@ -30,7 +36,7 @@ class ImageFieldTokensWidgetTest extends ImageFieldTestBase {
    *
    * @see \Drupal\Core\Config\Development\ConfigSchemaChecker
    */
-  //@codingStandardsIgnoreLine
+  // phpcs:ignore DrupalPractice.Objects.StrictSchemaDisabled.StrictConfigSchema
   protected $strictConfigSchema = FALSE;
 
   /**
@@ -55,7 +61,7 @@ class ImageFieldTokensWidgetTest extends ImageFieldTestBase {
    * @throws \Drupal\Core\Entity\EntityStorageException
    * @throws \Behat\Mink\Exception\ResponseTextException
    */
-  public function testWidgetElement() {
+  public function testWidgetElement(): void {
     // Check for image widget in add/node/article page.
     $node_storage = $this->container->get('entity_type.manager')->getStorage('node');
     $field_name = strtolower($this->randomMachineName());
@@ -76,7 +82,7 @@ class ImageFieldTokensWidgetTest extends ImageFieldTestBase {
     $this->assertSession()->pageTextNotContains('Image test on [site:name]');
 
     // Check for allowed image file extensions - default.
-    $this->assertSession()->pageTextContains('Allowed types: png gif jpg jpeg.');
+    $this->assertSession()->pageTextContains('Allowed types: png gif jpg jpeg webp.');
 
     // Try adding to the field config an unsupported extension, should not
     // appear in the allowed types.
@@ -107,7 +113,7 @@ class ImageFieldTokensWidgetTest extends ImageFieldTestBase {
       'type' => 'article',
     ])->save();
 
-    /* @var \Drupal\node\NodeStorage $node_storage */
+    /** @var \Drupal\node\NodeStorage $node_storage */
     // Reset node cache and load it.
     $nid = 1;
     $node_storage->resetCache([$nid]);

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\imagefield_tokens\Plugin\Field\FieldFormatter;
 
 use Drupal\colorbox\ElementAttachmentInterface;
@@ -25,13 +27,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * )
  */
 class ColorboxFormatter extends ColorboxFormatterBase {
-
-  /**
-   * Token service.
-   *
-   * @var \Drupal\Core\Utility\Token
-   */
-  protected $tokenService;
 
   /**
    * Constructs an ImageFormatter object.
@@ -60,7 +55,7 @@ class ColorboxFormatter extends ColorboxFormatterBase {
    *   Module handler services.
    * @param \Drupal\Core\Asset\LibraryDiscoveryInterface $libraryDiscovery
    *   Library discovery service.
-   * @param \Drupal\Core\Utility\Token $token
+   * @param \Drupal\Core\Utility\Token $tokenService
    *   The token service.
    */
   public function __construct(
@@ -76,16 +71,15 @@ class ColorboxFormatter extends ColorboxFormatterBase {
     ElementAttachmentInterface $attachment,
     ModuleHandlerInterface $moduleHandler,
     LibraryDiscoveryInterface $libraryDiscovery,
-    Token $token
+    protected Token $tokenService,
   ) {
     parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $label, $view_mode, $third_party_settings, $current_user, $image_style_storage, $attachment, $moduleHandler, $libraryDiscovery);
-    $this->tokenService = $token;
   }
 
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition): static {
     return new static(
       $plugin_id,
       $plugin_definition,
