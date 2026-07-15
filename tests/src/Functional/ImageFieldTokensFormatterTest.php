@@ -1,7 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\imagefield_tokens\Functional;
 
+use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Drupal\Core\Url;
 use Drupal\Tests\system\Functional\Cache\AssertPageCacheContextsAndTagsTrait;
 use Drupal\Tests\image\Functional\ImageFieldTestBase;
@@ -12,6 +16,8 @@ use Drupal\Tests\TestFileCreationTrait;
  *
  * @group image
  */
+#[Group('image')]
+#[RunTestsInSeparateProcesses]
 class ImageFieldTokensFormatterTest extends ImageFieldTestBase {
 
   /**
@@ -42,7 +48,7 @@ class ImageFieldTokensFormatterTest extends ImageFieldTestBase {
    *
    * @see \Drupal\Core\Config\Development\ConfigSchemaChecker
    */
-  //@codingStandardsIgnoreLine
+  // phpcs:ignore DrupalPractice.Objects.StrictSchemaDisabled.StrictConfigSchema
   protected $strictConfigSchema = FALSE;
 
   /**
@@ -53,17 +59,17 @@ class ImageFieldTokensFormatterTest extends ImageFieldTestBase {
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
-  public function testImageFieldFormatters() {
+  public function testImageFieldFormatters(): void {
     $node_storage = $this->container->get('entity_type.manager')->getStorage('node');
     $field_name = strtolower($this->randomMachineName());
     $field_settings = ['alt_field_required' => 0];
     $instance = $this->createImageFieldTokensField($field_name, 'article', ['uri_scheme' => 'public'], $field_settings);
 
     // Go to manage display page.
-    $this->drupalGet('admin/structure/types/manage/article/display');
+    $this->drupalGet('admin/structure/types/manage/article/display/default');
 
     // Test for existence of link to image styles configuration.
-    $this->submitForm([], "{$field_name}_settings_edit");
+    $this->submitForm([], $field_name . '_settings_edit');
     $this->assertSession()->linkByHrefExists(Url::fromRoute('entity.image_style.collection')->toString(), 0, 'Link to image styles configuration is found');
 
     // Remove 'administer image styles' permission from testing admin user.
@@ -71,10 +77,10 @@ class ImageFieldTokensFormatterTest extends ImageFieldTestBase {
     user_role_change_permissions(reset($admin_user_roles), ['administer image styles' => FALSE]);
 
     // Go to manage display page again.
-    $this->drupalGet('admin/structure/types/manage/article/display');
+    $this->drupalGet('admin/structure/types/manage/article/display/default');
 
     // Test for absence of link to image styles configuration.
-    $this->submitForm([], "{$field_name}_settings_edit");
+    $this->submitForm([], $field_name . '_settings_edit');
     $this->assertSession()->linkByHrefNotExists(Url::fromRoute('entity.image_style.collection')->toString(), 'Link to image styles configuration is absent when permissions are insufficient');
 
     // Restore 'administer image styles' permission to testing admin user.
@@ -88,7 +94,7 @@ class ImageFieldTokensFormatterTest extends ImageFieldTestBase {
 
     // After previewing, make the alt field required. It cannot be required
     // during preview because the form validation will fail.
-    /* @var \Drupal\field\Entity\FieldConfig $instance */
+    /** @var \Drupal\field\Entity\FieldConfig $instance */
     $instance->setSetting('alt_field_required', 1);
     $instance->save();
 
@@ -97,7 +103,7 @@ class ImageFieldTokensFormatterTest extends ImageFieldTestBase {
 
     // Save node.
     $nid = $this->uploadNodeImage($test_image, $field_name, 'article', $alt);
-    /* @var \Drupal\node\NodeStorage $node_storage */
+    /** @var \Drupal\node\NodeStorage $node_storage */
     $node_storage->resetCache([$nid]);
     $node = $node_storage->load($nid);
 
@@ -117,8 +123,8 @@ class ImageFieldTokensFormatterTest extends ImageFieldTestBase {
     // the node cache tag should be on the render array.
     // The file cache tag should be there no matter what.
     $cache_tags = $formatter_response_result[0]['#cache']['tags'];
-    self::assertTrue(in_array("node:$nid", $cache_tags), 'Make sure ALT field has appropriate node cache tags.');
-    self::assertTrue(in_array("file:{$node->{$field_name}->target_id}", $cache_tags), 'Make sure ALT field has appropriate file cache tags.');
+    self::assertTrue(in_array('node:' . $nid, $cache_tags), 'Make sure ALT field has appropriate node cache tags.');
+    self::assertTrue(in_array('file:' . $node->{$field_name}->target_id, $cache_tags), 'Make sure ALT field has appropriate file cache tags.');
 
   }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\imagefield_tokens\Functional;
 
 use Drupal\Core\Entity\Display\EntityFormDisplayInterface;
@@ -46,7 +48,7 @@ trait ImageFieldTokensTestingTrait {
       'entity_type' => 'node',
       'type' => 'image',
       'settings' => $storage_settings,
-      'cardinality' => !empty($storage_settings['cardinality']) ? $storage_settings['cardinality'] : 1,
+      'cardinality' => empty($storage_settings['cardinality']) ? 1 : $storage_settings['cardinality'],
     ])->save();
 
     $field_config = FieldConfig::create([
@@ -143,7 +145,6 @@ trait ImageFieldTokensTestingTrait {
    * @see \Drupal\Core\Entity\EntityStorageInterface::load()
    */
   protected function entityGetFormDisplay($entity_type, $bundle, $form_mode) : EntityFormDisplayInterface {
-
     // Try loading the entity from configuration.
     $entity_form_display = EntityFormDisplay::load($entity_type . '.' . $bundle . '.' . $form_mode);
 

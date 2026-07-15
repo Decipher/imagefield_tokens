@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\imagefield_tokens\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Entity\EntityRepositoryInterface;
@@ -31,27 +33,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class ImageFieldTokensWigdet extends ImageWidget {
 
   /**
-   * The current user.
-   *
-   * @var \Drupal\Core\Session\AccountInterface
-   */
-  protected $currentUser;
-
-  /**
-   * The module handler service.
-   *
-   * @var \Drupal\Core\Extension\ModuleHandlerInterface
-   */
-  protected $moduleHandler;
-
-  /**
-   * The entity repository.
-   *
-   * @var \Drupal\Core\Entity\EntityRepositoryInterface
-   */
-  protected $entityRepository;
-
-  /**
    * Constructs a new ImageFieldTokensWigdet object.
    *
    * @param string $plugin_id
@@ -68,24 +49,21 @@ class ImageFieldTokensWigdet extends ImageWidget {
    *   The element info manager.
    * @param \Drupal\Core\Image\ImageFactory $image_factory
    *   The image factory.
-   * @param \Drupal\Core\Session\AccountInterface $current_user
+   * @param \Drupal\Core\Session\AccountInterface $currentUser
    *   Current user service.
-   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $moduleHandler
    *   The module handler.
-   * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
+   * @param \Drupal\Core\Entity\EntityRepositoryInterface $entityRepository
    *   The entity repository.
    */
-  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, array $third_party_settings, ElementInfoManagerInterface $element_info, ImageFactory $image_factory, AccountInterface $current_user, ModuleHandlerInterface $module_handler, EntityRepositoryInterface $entity_repository) {
+  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, array $third_party_settings, ElementInfoManagerInterface $element_info, ImageFactory $image_factory, protected AccountInterface $currentUser, protected ModuleHandlerInterface $moduleHandler, protected EntityRepositoryInterface $entityRepository) {
     parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $third_party_settings, $element_info, $image_factory);
-    $this->currentUser = $current_user;
-    $this->moduleHandler = $module_handler;
-    $this->entityRepository = $entity_repository;
   }
 
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition): static {
     return new static(
       $plugin_id,
       $plugin_definition,
@@ -103,6 +81,8 @@ class ImageFieldTokensWigdet extends ImageWidget {
 
   /**
    * {@inheritdoc}
+   *
+   * @phpstan-param FieldItemListInterface<\Drupal\Core\Field\FieldItemInterface> $items
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $element = parent::formElement($items, $delta, $element, $form, $form_state);
@@ -115,16 +95,19 @@ class ImageFieldTokensWigdet extends ImageWidget {
       $entity_type_id = $object->getEntity() ? $object->getEntity()->getEntityTypeId() : '';
     }
     // When not on an entity form. Try to detect entity type with another way.
-    elseif (empty($entity_type_id) && isset($element['#entity_type'])) {
+    elseif (isset($element['#entity_type'])) {
       $entity_type_id = $element['#entity_type'];
     }
 
     // Add image validation.
-    $element['#upload_validators']['file_validate_is_image'] = [];
+    $element['#upload_validators']['FileIsImage'] = [];
 
-    // Add upload resolution validation.
+    // Add upload dimensions validation.
     if ($field_settings['max_resolution'] || $field_settings['min_resolution']) {
-      $element['#upload_validators']['file_validate_image_resolution'] = [$field_settings['max_resolution'], $field_settings['min_resolution']];
+      $element['#upload_validators']['FileImageDimensions'] = [
+        'maxDimensions' => $field_settings['max_resolution'],
+        'minDimensions' => $field_settings['min_resolution'],
+      ];
     }
 
     $extensions = $field_settings['file_extensions'];
@@ -133,8 +116,8 @@ class ImageFieldTokensWigdet extends ImageWidget {
     // If using custom extension validation, ensure that the extensions are
     // supported by the current image toolkit. Otherwise, validate against all
     // toolkit supported extensions.
-    $extensions = !empty($extensions) ? array_intersect(explode(' ', $extensions), $supported_extensions) : $supported_extensions;
-    $element['#upload_validators']['file_validate_extensions'][0] = implode(' ', $extensions);
+    $extensions = empty($extensions) ? $supported_extensions : array_intersect(explode(' ', $extensions), $supported_extensions);
+    $element['#upload_validators']['FileExtension']['extensions'] = implode(' ', $extensions);
 
     // Add mobile device image capture acceptance.
     $element['#accept'] = 'image/*';
@@ -155,7 +138,7 @@ class ImageFieldTokensWigdet extends ImageWidget {
     if (!empty($default_image['uuid']) && $entity = $this->entityRepository->loadEntityByUuid('file', $default_image['uuid'])) {
       $default_image['fid'] = $entity->id();
     }
-    $element['#default_image'] = !empty($default_image['fid']) ? $default_image : [];
+    $element['#default_image'] = empty($default_image['fid']) ? [] : $default_image;
     if (!$this->currentUser->isAnonymous()) {
       // Add token link to the form.
       $form['#token'] = TRUE;
@@ -176,8 +159,11 @@ class ImageFieldTokensWigdet extends ImageWidget {
 
   /**
    * {@inheritdoc}
+   *
+   * @phpstan-param mixed $element
+   * @phpstan-param mixed $form
    */
-  public static function process($element, FormStateInterface $form_state, $form) {
+  public static function process($element, FormStateInterface $form_state, $form): array {
     $entity_type = '';
     $current_entity = NULL;
     $field_settings = [];
@@ -211,10 +197,13 @@ class ImageFieldTokensWigdet extends ImageWidget {
     $alt_token = '';
     $title_token = '';
     // Fill alt & title fields from default image settings if they are empty.
-    $condition = !empty($field_settings) && !empty($field_settings['default_image']) && (empty($item['alt']) || empty($item['title'])) && (!empty($element['#default_value']['display']) || empty($element['#default_value']['alt']));
-    if ($condition) {
-      $item['alt'] = $field_settings['default_image']['alt'];
-      $item['title'] = $field_settings['default_image']['title'];
+    if (!empty($field_settings) && !empty($field_settings['default_image'])) {
+      if (empty($item['alt']) && (!empty($element['#default_value']['display']) || empty($element['#default_value']['alt']))) {
+        $item['alt'] = $field_settings['default_image']['alt'];
+      }
+      if (empty($item['title'])) {
+        $item['title'] = $field_settings['default_image']['title'];
+      }
     }
 
     $element['#theme'] = 'image_widget';
@@ -302,7 +291,7 @@ class ImageFieldTokensWigdet extends ImageWidget {
       '#weight' => -12,
       '#access' => (bool) $item['fids'] && $element['#alt_field'],
       '#required' => $element['#alt_field_required'],
-      '#element_validate' => $element['#alt_field_required'] === 1 ? [[get_called_class(), 'validateRequiredFields']] : [],
+      '#element_validate' => $element['#alt_field_required'] ? [[static::class, 'validateRequiredFields']] : [],
     ];
 
     $element['title'] = [
@@ -314,7 +303,7 @@ class ImageFieldTokensWigdet extends ImageWidget {
       '#weight' => -11,
       '#access' => (bool) $item['fids'] && $element['#title_field'],
       '#required' => $element['#title_field_required'],
-      '#element_validate' => $element['#title_field_required'] === 1 ? [[get_called_class(), 'validateRequiredFields']] : [],
+      '#element_validate' => $element['#title_field_required'] ? [[static::class, 'validateRequiredFields']] : [],
     ];
 
     $element['#value']['alt'] = $alt_token;

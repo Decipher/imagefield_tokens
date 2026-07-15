@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\imagefield_tokens\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -32,20 +34,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class ImageFieldTokensCropWidget extends ImageCropWidget {
 
   /**
-   * The current user.
-   *
-   * @var \Drupal\Core\Session\AccountInterface
-   */
-  protected $currentUser;
-
-  /**
-   * The module handler service.
-   *
-   * @var \Drupal\Core\Extension\ModuleHandlerInterface
-   */
-  protected $moduleHandler;
-
-  /**
    * Constructs a new ImageFieldTokensCropWidget object.
    *
    * @param string $plugin_id
@@ -68,21 +56,19 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
    *   The crop type storage.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The configuration factory.
-   * @param \Drupal\Core\Session\AccountInterface $current_user
+   * @param \Drupal\Core\Session\AccountInterface $currentUser
    *   Current user service.
-   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $moduleHandler
    *   The module handler.
    */
-  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, array $third_party_settings, ElementInfoManagerInterface $element_info, ImageWidgetCropInterface $iwc_manager, EntityStorageInterface $image_style_storage, ConfigEntityStorageInterface $crop_type_storage, ConfigFactoryInterface $config_factory, AccountInterface $current_user, ModuleHandlerInterface $module_handler) {
+  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, array $third_party_settings, ElementInfoManagerInterface $element_info, ImageWidgetCropInterface $iwc_manager, EntityStorageInterface $image_style_storage, ConfigEntityStorageInterface $crop_type_storage, ConfigFactoryInterface $config_factory, protected AccountInterface $currentUser, protected ModuleHandlerInterface $moduleHandler) {
     parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $third_party_settings, $element_info, $iwc_manager, $image_style_storage, $crop_type_storage, $config_factory);
-    $this->currentUser = $current_user;
-    $this->moduleHandler = $module_handler;
   }
 
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition): static {
     return new static(
       $plugin_id,
       $plugin_definition,
@@ -103,8 +89,7 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
   /**
    * {@inheritdoc}
    *
-   * @return array[]
-   *   The form elements for a single widget for this field.
+   * @phpstan-param FieldItemListInterface<\Drupal\Core\Field\FieldItemInterface> $items
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $element = parent::formElement($items, $delta, $element, $form, $form_state);
@@ -115,7 +100,7 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
       $entity_type_id = $object->getEntity() ? $object->getEntity()->getEntityTypeId() : '';
     }
     // When not on an entity form. Try to detect entity type with another way.
-    elseif (empty($entity_type_id) && isset($element['#entity_type'])) {
+    elseif (isset($element['#entity_type'])) {
       $entity_type_id = $element['#entity_type'];
     }
 
@@ -144,10 +129,13 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
    *
    * This method is assigned as a #process callback in formElement() method.
    *
+   * @phpstan-param mixed $element
+   * @phpstan-param mixed $form
+   *
    * @return array
    *   The elements with parents fields.
    */
-  public static function process($element, FormStateInterface $form_state, $form) {
+  public static function process($element, FormStateInterface $form_state, $form): array {
     $element = parent::process($element, $form_state, $form);
 
     $entity_type = '';
@@ -211,7 +199,7 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
       '#weight' => -12,
       '#access' => (bool) $item['fids'] && $element['#alt_field'],
       '#required' => $element['#alt_field_required'],
-      '#element_validate' => $element['#alt_field_required'] === 1 ? [[get_called_class(), 'validateRequiredFields']] : [],
+      '#element_validate' => $element['#alt_field_required'] ? [[static::class, 'validateRequiredFields']] : [],
     ];
 
     $element['title'] = [
@@ -223,7 +211,7 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
       '#weight' => -11,
       '#access' => (bool) $item['fids'] && $element['#title_field'],
       '#required' => $element['#title_field_required'],
-      '#element_validate' => $element['#title_field_required'] === 1 ? [[get_called_class(), 'validateRequiredFields']] : [],
+      '#element_validate' => $element['#title_field_required'] ? [[static::class, 'validateRequiredFields']] : [],
     ];
 
     $element['#value']['alt'] = $alt_token;

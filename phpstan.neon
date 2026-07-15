@@ -71,6 +71,15 @@ parameters:
         - '#Strict comparison using !== between int and#'
       reportUnmatched: false
     -
+      # ImageFieldTokensFormatter extends core's ImageFormatter, whose
+      # constructor requires $image_style_storage as a directly-injected
+      # EntityStorageInterface parameter. This is core's own contract, not
+      # something this module can refactor away without breaking
+      # parent::__construct().
+      identifiers:
+        - drupal.entityStorageDirectInjection
+      reportUnmatched: false
+    -
       # Test framework type resolution issues. These are false positives caused
       # by PHPStan's inability to resolve dynamic test base class types.
       messages:
