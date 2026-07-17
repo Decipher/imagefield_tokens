@@ -25,6 +25,9 @@
         "drupal/token": "^1.5",
         "php": ">=8.2"
     },
+    "require-dev": {
+        "drupal/image_widget_crop": "^3"
+    },
     "suggest": {
         "drupal/colorbox": "Optional Colorbox formatter integration",
         "drupal/image_widget_crop": "Optional crop widget integration"

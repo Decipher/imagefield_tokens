@@ -6,6 +6,7 @@ namespace Drupal\imagefield_tokens\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Config\Entity\ConfigEntityStorageInterface;
+use Drupal\Core\Entity\EntityFormInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
@@ -95,9 +96,8 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
     $element = parent::formElement($items, $delta, $element, $form, $form_state);
     $entity_type_id = '';
     $object = $form_state->getFormObject();
-    $get_entity = method_exists($object, 'getEntity');
-    if ($get_entity) {
-      $entity_type_id = $object->getEntity() ? $object->getEntity()->getEntityTypeId() : '';
+    if ($object instanceof EntityFormInterface) {
+      $entity_type_id = $object->getEntity()->getEntityTypeId();
     }
     // When not on an entity form. Try to detect entity type with another way.
     elseif (isset($element['#entity_type'])) {
@@ -142,9 +142,8 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
     $current_entity = NULL;
     // Get form object to retrieve parent entity.
     $form_object = $form_state->getFormObject();
-    $get_entity = method_exists($form_object, 'getEntity');
 
-    if ($get_entity) {
+    if ($form_object instanceof EntityFormInterface) {
       $current_entity = $form_object->getEntity();
     }
     // Support for media library.
@@ -170,9 +169,13 @@ class ImageFieldTokensCropWidget extends ImageCropWidget {
     $alt_token = '';
     $title_token = '';
 
-    if (!empty($field_settings) && !empty($field_settings['default_image']) && (empty($item['alt']) || empty($item['title']))) {
-      $item['alt'] = $field_settings['default_image']['alt'];
-      $item['title'] = $field_settings['default_image']['title'];
+    if (!empty($field_settings) && !empty($field_settings['default_image'])) {
+      if (empty($item['alt'])) {
+        $item['alt'] = $field_settings['default_image']['alt'];
+      }
+      if (empty($item['title'])) {
+        $item['title'] = $field_settings['default_image']['title'];
+      }
     }
 
     if (isset($item['alt'])) {
