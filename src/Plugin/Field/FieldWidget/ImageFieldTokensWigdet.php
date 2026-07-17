@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\imagefield_tokens\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Entity\EntityRepositoryInterface;
+use Drupal\Core\Entity\EntityFormInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemListInterface;
@@ -90,9 +91,8 @@ class ImageFieldTokensWigdet extends ImageWidget {
     // Get setting for token.
     $field_settings = $this->getFieldSettings();
     $object = $form_state->getFormObject();
-    $get_entity = method_exists($object, 'getEntity');
-    if ($get_entity) {
-      $entity_type_id = $object->getEntity() ? $object->getEntity()->getEntityTypeId() : '';
+    if ($object instanceof EntityFormInterface) {
+      $entity_type_id = $object->getEntity()->getEntityTypeId();
     }
     // When not on an entity form. Try to detect entity type with another way.
     elseif (isset($element['#entity_type'])) {
@@ -169,9 +169,8 @@ class ImageFieldTokensWigdet extends ImageWidget {
     $field_settings = [];
     // Get form object to retrieve parent entity.
     $form_object = $form_state->getFormObject();
-    $get_entity = method_exists($form_object, 'getEntity');
 
-    if ($get_entity) {
+    if ($form_object instanceof EntityFormInterface) {
       $current_entity = $form_object->getEntity();
     }
     // Support for media library.
