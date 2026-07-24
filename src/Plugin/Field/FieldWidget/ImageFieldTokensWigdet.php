@@ -13,7 +13,6 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Image\ImageFactory;
 use Drupal\Core\Render\ElementInfoManagerInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\field\Entity\FieldConfig;
 use Drupal\file\Entity\File;
 use Drupal\image\Plugin\Field\FieldWidget\ImageWidget;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
@@ -32,6 +31,16 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * )
  */
 class ImageFieldTokensWigdet extends ImageWidget {
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function defaultSettings() {
+    return [
+      'default_alt' => '',
+      'default_title' => '',
+    ] + parent::defaultSettings();
+  }
 
   /**
    * Constructs a new ImageFieldTokensWigdet object.
@@ -78,6 +87,60 @@ class ImageFieldTokensWigdet extends ImageWidget {
       $container->get('entity.repository')
     );
 
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function settingsForm(array $form, FormStateInterface $form_state) {
+    $form = parent::settingsForm($form, $form_state);
+
+    $form['default_alt'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Default alternative text'),
+      '#default_value' => $this->getSetting('default_alt'),
+      '#description' => $this->t('Token-based default value for the alt attribute. Used when the stored alt is empty.'),
+      '#maxlength' => 512,
+    ];
+
+    $form['default_title'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Default title'),
+      '#default_value' => $this->getSetting('default_title'),
+      '#description' => $this->t('Token-based default value for the title attribute. Used when the stored title is empty.'),
+      '#maxlength' => 1024,
+    ];
+
+    if ($this->moduleHandler->moduleExists('token')) {
+      $entity_type_id = $this->fieldDefinition->getTargetEntityTypeId();
+      $form['token_tree'] = [
+        '#theme' => 'token_tree_link',
+        '#token_types' => [$entity_type_id],
+        '#show_restricted' => TRUE,
+        '#weight' => 90,
+      ];
+    }
+
+    return $form;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function settingsSummary() {
+    $summary = parent::settingsSummary();
+
+    $default_alt = $this->getSetting('default_alt');
+    $default_title = $this->getSetting('default_title');
+
+    if (!empty($default_alt)) {
+      $summary[] = $this->t('Default alt: @value', ['@value' => $default_alt]);
+    }
+    if (!empty($default_title)) {
+      $summary[] = $this->t('Default title: @value', ['@value' => $default_title]);
+    }
+
+    return $summary;
   }
 
   /**
@@ -139,6 +202,11 @@ class ImageFieldTokensWigdet extends ImageWidget {
       $default_image['fid'] = $entity->id();
     }
     $element['#default_image'] = empty($default_image['fid']) ? [] : $default_image;
+
+    // Pass widget settings for token-based defaults.
+    $element['#default_alt'] = $this->getSetting('default_alt');
+    $element['#default_title'] = $this->getSetting('default_title');
+
     if (!$this->currentUser->isAnonymous()) {
       // Add token link to the form.
       $form['#token'] = TRUE;
@@ -166,7 +234,6 @@ class ImageFieldTokensWigdet extends ImageWidget {
   public static function process($element, FormStateInterface $form_state, $form): array {
     $entity_type = '';
     $current_entity = NULL;
-    $field_settings = [];
     // Get form object to retrieve parent entity.
     $form_object = $form_state->getFormObject();
 
@@ -182,27 +249,19 @@ class ImageFieldTokensWigdet extends ImageWidget {
     }
 
     if (!empty($current_entity)) {
-      // Get entity data.
       $entity_type = $current_entity->getEntityTypeId();
-      $entity_bundle = $current_entity->bundle();
-      // Get field settings.
-      $field_name = $element['#field_name'];
-      $field_config = FieldConfig::loadByName($entity_type, $entity_bundle, $field_name);
-      $field_settings = $field_config->getSettings();
     }
 
     $item = $element['#value'];
     $item['fids'] = $element['fids']['#value'];
     $alt_token = '';
     $title_token = '';
-    // Fill alt & title fields from default image settings if they are empty.
-    if (!empty($field_settings) && !empty($field_settings['default_image'])) {
-      if (empty($item['alt']) && (!empty($element['#default_value']['display']) || empty($element['#default_value']['alt']))) {
-        $item['alt'] = $field_settings['default_image']['alt'];
-      }
-      if (empty($item['title'])) {
-        $item['title'] = $field_settings['default_image']['title'];
-      }
+    // Fill alt & title fields from widget settings if they are empty.
+    if (empty($item['alt']) && !empty($element['#default_alt'])) {
+      $item['alt'] = $element['#default_alt'];
+    }
+    if (empty($item['title']) && !empty($element['#default_title'])) {
+      $item['title'] = $element['#default_title'];
     }
 
     $element['#theme'] = 'image_widget';

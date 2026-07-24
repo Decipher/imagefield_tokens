@@ -200,6 +200,8 @@ class ImageFieldTokensVboCompatibilityTest extends KernelTestBase {
       'fids' => ['#value' => []],
       '#files' => [],
       '#default_image' => [],
+      '#default_alt' => 'Test alt',
+      '#default_title' => 'Test title',
       '#preview_image_style' => '',
       '#alt_field' => FALSE,
       '#title_field' => FALSE,
@@ -214,6 +216,63 @@ class ImageFieldTokensVboCompatibilityTest extends KernelTestBase {
 
     self::assertArrayHasKey('alt', $result, 'Process added alt field.');
     self::assertArrayHasKey('title', $result, 'Process added title field.');
+    self::assertEquals('Test alt', $result['alt']['#default_value']);
+    self::assertEquals('Test title', $result['title']['#default_value']);
+  }
+
+  /**
+   * Tests defaultSettings() includes the widget-specific settings.
+   */
+  public function testDefaultSettings(): void {
+    $defaults = ImageFieldTokensWigdet::defaultSettings();
+    self::assertArrayHasKey('default_alt', $defaults);
+    self::assertArrayHasKey('default_title', $defaults);
+    self::assertEquals('', $defaults['default_alt']);
+    self::assertEquals('', $defaults['default_title']);
+  }
+
+  /**
+   * Tests settingsForm() renders default_alt and default_title fields.
+   */
+  public function testSettingsForm(): void {
+    $widget = $this->widgetManager->getInstance([
+      'field_definition' => FieldConfig::load('node.article.field_image'),
+      'configuration' => [
+        'type' => 'imagefield_tokens',
+        'settings' => ['default_alt' => 'Alt [node:title]', 'default_title' => 'Title [node:title]'],
+        'third_party_settings' => [],
+      ],
+    ]);
+
+    $form = [];
+    $form_state = new FormState();
+    $settings_form = $widget->settingsForm($form, $form_state);
+
+    self::assertArrayHasKey('default_alt', $settings_form);
+    self::assertEquals('Alt [node:title]', $settings_form['default_alt']['#default_value']);
+    self::assertArrayHasKey('default_title', $settings_form);
+    self::assertEquals('Title [node:title]', $settings_form['default_title']['#default_value']);
+    self::assertArrayHasKey('token_tree', $settings_form);
+  }
+
+  /**
+   * Tests settingsSummary() includes configured default values.
+   */
+  public function testSettingsSummary(): void {
+    $widget = $this->widgetManager->getInstance([
+      'field_definition' => FieldConfig::load('node.article.field_image'),
+      'configuration' => [
+        'type' => 'imagefield_tokens',
+        'settings' => ['default_alt' => 'Test alt', 'default_title' => 'Test title'],
+        'third_party_settings' => [],
+      ],
+    ]);
+
+    $summary = $widget->settingsSummary();
+    $summary_text = implode(' ', $summary);
+
+    self::assertStringContainsString('Test alt', $summary_text);
+    self::assertStringContainsString('Test title', $summary_text);
   }
 
 }

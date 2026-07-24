@@ -143,4 +143,103 @@ class ImageFieldTokensWidgetTest extends ImageFieldTestBase {
     self::assertEquals($xpath[0]->getValue(), $node->getTitle(), 'Make sure ALT field has been processed correctly!');
   }
 
+  /**
+   * Tests widget default alt/title settings.
+   */
+  public function testWidgetDefaultSettings(): void {
+    $field_name = strtolower($this->randomMachineName());
+    $field_settings = [
+      'alt_field' => 1,
+      'title_field' => 1,
+    ];
+    $storage_settings = ['uri_scheme' => 'public'];
+    $this->createImageFieldTokensField($field_name, 'article', $storage_settings, $field_settings);
+
+    // Configure widget with default alt and title tokens.
+    $form_display = \Drupal::entityTypeManager()->getStorage('entity_form_display')->load('node.article.default');
+    $form_display->setComponent($field_name, [
+      'type' => 'imagefield_tokens',
+      'settings' => [
+        'default_alt' => '[node:title]',
+        'default_title' => '[node:title]',
+      ],
+    ])->save();
+
+    // Create a test image file.
+    $test_image = current($this->drupalGetTestFiles('image'));
+    $file = File::create(['uri' => $test_image->uri]);
+    $file->save();
+
+    // Create a node with an image but no alt/title set.
+    $node = Node::create([
+      'title' => 'Test Node Title',
+      'type' => 'article',
+    ]);
+    $node->{$field_name}->setValue([
+      'target_id' => $file->id(),
+    ]);
+    $node->save();
+
+    // Edit the node: the alt and title fields should be pre-filled with the
+    // token-replaced default values.
+    $this->drupalGet('node/' . $node->id() . '/edit');
+    $alt_path = "//input[@id='edit-" . $field_name . "-0-alt']";
+    $title_path = "//input[@id='edit-" . $field_name . "-0-title']";
+    $alt_element = $this->xpath($alt_path);
+    $title_element = $this->xpath($title_path);
+
+    self::assertEquals('Test Node Title', $alt_element[0]->getValue(), 'Default alt token replaced correctly.');
+    self::assertEquals('Test Node Title', $title_element[0]->getValue(), 'Default title token replaced correctly.');
+  }
+
+  /**
+   * Tests that stored values take precedence over widget defaults.
+   */
+  public function testStoredValuesTakePrecedence(): void {
+    $field_name = strtolower($this->randomMachineName());
+    $field_settings = [
+      'alt_field' => 1,
+      'title_field' => 1,
+    ];
+    $storage_settings = ['uri_scheme' => 'public'];
+    $this->createImageFieldTokensField($field_name, 'article', $storage_settings, $field_settings);
+
+    // Configure widget with default alt.
+    $form_display = \Drupal::entityTypeManager()->getStorage('entity_form_display')->load('node.article.default');
+    $form_display->setComponent($field_name, [
+      'type' => 'imagefield_tokens',
+      'settings' => [
+        'default_alt' => '[node:title]',
+        'default_title' => '[node:title]',
+      ],
+    ])->save();
+
+    // Create a test image file.
+    $test_image = current($this->drupalGetTestFiles('image'));
+    $file = File::create(['uri' => $test_image->uri]);
+    $file->save();
+
+    // Create a node with stored alt/title that should override defaults.
+    $node = Node::create([
+      'title' => 'Node Title',
+      'type' => 'article',
+    ]);
+    $node->{$field_name}->setValue([
+      'target_id' => $file->id(),
+      'alt' => 'Stored Alt',
+      'title' => 'Stored Title',
+    ]);
+    $node->save();
+
+    // Edit the node: stored values should be shown, not the defaults.
+    $this->drupalGet('node/' . $node->id() . '/edit');
+    $alt_path = "//input[@id='edit-" . $field_name . "-0-alt']";
+    $title_path = "//input[@id='edit-" . $field_name . "-0-title']";
+    $alt_element = $this->xpath($alt_path);
+    $title_element = $this->xpath($title_path);
+
+    self::assertEquals('Stored Alt', $alt_element[0]->getValue(), 'Stored alt takes precedence over default.');
+    self::assertEquals('Stored Title', $title_element[0]->getValue(), 'Stored title takes precedence over default.');
+  }
+
 }
