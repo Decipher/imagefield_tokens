@@ -8,6 +8,6 @@
     "lint-spell": "cspell --no-progress"
   },
   "devDependencies": {
-    "cspell": "^8.0.0"
+    "cspell": "^8.19.4"
   }
 }
